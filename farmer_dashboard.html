@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2a9d8f;
+            --secondary-color: #264653;
+            --background-color: #f8f9fa; /* Lighter background */
+            --card-bg-color: #ffffff;
+            --text-color: #343a40;
+            --border-color: #dee2e6;
+            --danger-color: #e76f51;
+            --success-color: #8ab17d;
+            --warning-color: #f4a261;
+            --font-family: 'Roboto', sans-serif;
+        }
+        
+        /* General Styles */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--card-bg-color);
+            color: var(--secondary-color);
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+
+        /* Dashboard Grid & Cards */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background-color: var(--card-bg-color);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 12px;
+            color: var(--secondary-color);
+            font-size: 1.4em;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        #farmsList {
+            list-style-type: none;
+            padding: 0;
+        }
+        #farmsList li {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #farmsList li:last-child {
+            border-bottom: none;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+
+        tr:hover {
+            background-color: #e9ecef;
+        }
+
+        /* Buttons & Inputs */
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95em;
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: #248a7e; }
+        .btn-secondary { background-color: var(--secondary-color); color: white; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-small { padding: 6px 12px; font-size: 0.8em; }
+
+        .form-group input, .form-group select, .form-group textarea, #animalSearch {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus, #animalSearch:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.2);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-content {
+            background-color: var(--card-bg-color);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+            position: relative;
+            animation: slideIn 0.4s;
+        }
+        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .modal-header h2 { margin: 0; color: var(--secondary-color); }
+        .close-btn { color: #888; font-size: 32px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .close-btn:hover { color: #333; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+        
+        #animal-details-content { max-height: 60vh; overflow-y: auto; padding-right: 10px; }
+        .detail-group { margin-bottom: 15px; }
+        .detail-group strong { color: var(--secondary-color); }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 16px;
+            color: white;
+            font-size: 0.85em;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+        .status-active { background-color: var(--success-color); }
+        .status-treatment { background-color: var(--warning-color); }
+        .status-sold, .status-dead { background-color: var(--danger-color); }
+        .status-default, .status-in_use { background-color: #6c757d; }
+        .status-finished { background-color: var(--primary-color); }
+
+        /* --- AI CHATBOT STYLES --- */
+        #aiChatButton {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--secondary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 1001;
+            transition: transform 0.2s;
+        }
+        #aiChatButton:hover {
+            transform: scale(1.1);
+        }
+
+        #aiChatWindow {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            max-height: 500px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            z-index: 1000;
+            overflow: hidden;
+            flex-direction: column;
+            animation: slideIn 0.3s;
+        }
+        .chat-header {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 15px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-header .close-chat { cursor: pointer; font-size: 20px; }
+        #chatMessages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-message {
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            line-height: 1.4;
+        }
+        .user-message {
+            background-color: var(--primary-color);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .ai-message {
+            background-color: #e9ecef;
+            color: var(--text-color);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .typing-indicator {
+            align-self: flex-start;
+            color: #888;
+            font-style: italic;
+        }
+        #chatInputContainer {
+            border-top: 1px solid var(--border-color);
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        #chatInput {
+            flex-grow: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 10px 15px;
+            outline: none;
+        }
+        #chatSendBtn {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Farmer Dashboard</h1>
+             <button id="logout-btn" class="btn btn-danger">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                     <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
+                     <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+                 </svg>
+                 <span>Logout</span>
+             </button>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card" style="grid-column: 1 / -1;">
+                <div class="card-header">
+                    <h2>My Livestock</h2>
+                    <button class="btn btn-primary" id="addAnimalBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
+                        <span>Add New Animal</span>
+                    </button>
+                </div>
+                <input type="text" id="animalSearch" placeholder="Search by Tag ID or Species..." style="width: 100%; padding: 12px; margin-bottom: 20px;">
+                <table id="animalsTable">
+                    <thead>
+                        <tr>
+                            <th>Tag ID</th>
+                            <th>Species</th>
+                            <th>Breed</th>
+                            <th>Age</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>Medicated Feed Batches</h2>
+                    <button class="btn btn-primary" id="addFeedBatchBtn">Add Batch</button>
+                </div>
+                <table id="feedBatchesTable">
+                    <thead>
+                        <tr>
+                            <th>Batch #</th>
+                            <th>Antimicrobial</th>
+                            <th>Status</th>
+                            <th>End Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                 <div class="card-header">
+                    <h2>My Farms</h2>
+                    <button class="btn btn-primary" id="addFarmBtn">Add Farm</button>
+                </div>
+                <ul id="farmsList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="animalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="animalModalTitle">Add New Animal</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <form id="animalForm">
+                <input type="hidden" id="animalId">
+                <div class="form-group">
+                    <label for="tag_id">Tag ID *</label>
+                    <input type="text" id="tag_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="farm_id">Farm *</label>
+                    <select id="farm_id_select" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="species">Species *</label>
+                    <input type="text" id="species" required>
+                </div>
+                <div class="form-group">
+                    <label for="breed">Breed</label>
+                    <input type="text" id="breed">
+                </div>
+                <div class="form-group">
+                    <label for="dob">Date of Birth</label>
+                    <input type="date" id="dob">
+                </div>
+                <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select id="gender">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Animal</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="animalDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 id="animalDetailsTitle">Animal Details</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <div id="animal-details-content"></div>
+             <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px; display:flex; gap: 10px;">
+                <button class="btn btn-secondary" id="addHealthLogBtn">Log Health Record</button>
+                <button class="btn btn-warning" id="updateStatusBtn">Update Status (Sold/Dead)</button>
+             </div>
+        </div>
+    </div>
+
+    <div id="healthLogModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Health Record</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <form id="healthLogForm">
+                <input type="hidden" id="healthLogAnimalId">
+                <div class="form-group">
+                    <label for="weight">Weight (kg)</label>
+                    <input type="number" id="weight" step="0.1">
+                </div>
+                 <div class="form-group">
+                    <label for="temperature">Temperature (°C)</label>
+                    <input type="number" id="temperature" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="symptoms">Symptoms</label>
+                    <textarea id="symptoms" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Log</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="updateStatusModal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+             <div class="modal-header">
+                <h2>Update Animal Status</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <form id="updateStatusForm">
+                <input type="hidden" id="statusUpdateAnimalId">
+                <div class="form-group">
+                    <label for="new_status">New Status *</label>
+                    <select id="new_status" required>
+                        <option value="sold">Sold/Transferred</option>
+                        <option value="dead">Dead</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-danger">Confirm Update</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="feedBatchModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Medicated Feed Batch</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <form id="feedBatchForm">
+                <div class="form-group">
+                    <label for="batch_farm_id">Farm *</label>
+                    <select id="batch_farm_id_select" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="antimicrobial">Antimicrobial Used *</label>
+                    <input type="text" id="antimicrobial" required>
+                </div>
+                <div class="form-group">
+                    <label for="batch_number">Batch Number</label>
+                    <input type="text" id="batch_number">
+                </div>
+                <div class="form-group">
+                    <label for="start_date">Start Date</label>
+                    <input type="date" id="start_date">
+                </div>
+                <div class="form-group">
+                    <label for="end_date">End Date</label>
+                    <input type="date" id="end_date">
+                </div>
+                <div class="form-group">
+                    <label for="withdrawal_days">Withdrawal Period (Days)</label>
+                    <input type="number" id="withdrawal_days">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Batch</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="farmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Farm</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <form id="farmForm">
+                <div class="form-group">
+                    <label for="farm_name">Farm Name *</label>
+                    <input type="text" id="farm_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="farm_location">Location (optional)</label>
+                    <input type="text" id="farm_location">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Farm</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="aiChatButton">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.5a1 1 0 0 0-.8.4l-1.9 2.533a1 1 0 0 1-1.6 0L5.3 12.4a1 1 0 0 0-.8-.4H2a2 2 0 0 1-2-2V2zm5 4a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+        </svg>
+    </div>
+    <div id="aiChatWindow" style="display: none;">
+        <div class="chat-header">
+            <span>AI Vet Assistant</span>
+            <span class="close-chat">&times;</span>
+        </div>
+        <div id="chatMessages">
+             <div class="chat-message ai-message">Hello! How can I help you today?</div>
+        </div>
+        <div id="chatInputContainer">
+            <input type="text" id="chatInput" placeholder="Ask a question...">
+            <button id="chatSendBtn" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11zM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493z"/></svg>
+            </button>
+        </div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const API_URL = 'http://127.0.0.1:5000';
+    let allAnimals = [];
+
+    // --- NEW: Logout Functionality ---
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        localStorage.removeItem('accessToken');
+        alert('You have been logged out.');
+        window.location.href = '/'; // Redirect to the login page
+    });
+
+    // Corrected and robust API Fetch Utility
+    async function apiFetch(endpoint, options = {}) {
+        const accessToken = localStorage.getItem('accessToken');
+
+        if (!accessToken) {
+            alert('Authentication error: No token found. Please log in again.');
+            window.location.href = '/'; 
+            return null;
+        }
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+        };
+        options.headers = { ...headers, ...options.headers };
+        
+        try {
+            const response = await fetch(API_URL + endpoint, options);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+            // Handle responses that might not have a JSON body (like 204 No Content)
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return await response.json();
+            } else {
+                return { success: true }; // Assume success for non-JSON responses
+            }
+        } catch (error) {
+            console.error(`API Error on ${endpoint}:`, error);
+            alert(`An error occurred: ${error.message}`);
+            if (error.message.toLowerCase().includes('token')) {
+                // Token is likely expired or invalid, force logout
+                localStorage.removeItem('accessToken');
+                window.location.href = '/';
+            }
+            return null;
+        }
+    }
+
+    // --- Data Loading and Rendering (Original functionality preserved) ---
+
+    function renderAnimals(animals) {
+        const tableBody = document.querySelector('#animalsTable tbody');
+        tableBody.innerHTML = '';
+        if (!animals || animals.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6">No animals found.</td></tr>';
+            return;
+        }
+        animals.forEach(animal => {
+            const statusClass = `status-${(animal.status || 'active').toLowerCase().replace(/\s+/g, '_')}`;
+            const row = `
+                <tr>
+                    <td>${animal.tag_id}</td>
+                    <td>${animal.species}</td>
+                    <td>${animal.breed || 'N/A'}</td>
+                    <td>${calculateAge(animal.dob)}</td>
+                    <td><span class="status-badge ${statusClass}">${animal.status || 'Active'}</span></td>
+                    <td>
+                        <button class="btn btn-secondary btn-small" onclick="viewAnimalDetails('${animal.tag_id}')">View</button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    function renderFeedBatches(batches) {
+        const tableBody = document.querySelector('#feedBatchesTable tbody');
+        tableBody.innerHTML = '';
+        if (!batches || batches.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5">No feed batches found.</td></tr>';
+            return;
+        }
+        batches.forEach(batch => {
+            const statusClass = `status-${(batch.status || 'default').toLowerCase()}`;
+            const row = `
+                <tr>
+                    <td>${batch.batch_number || 'N/A'}</td>
+                    <td>${batch.antimicrobial}</td>
+                    <td><span class="status-badge ${statusClass}">${batch.status}</span></td>
+                    <td>${batch.end_date || 'N/A'}</td>
+                    <td>
+                         ${batch.status === 'in_use' ? `<button class="btn btn-secondary btn-small" onclick="updateFeedBatchStatus('${batch.id}', 'finished')">Finish</button>` : ''}
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    function renderFarms(farms) {
+        const list = document.querySelector('#farmsList');
+        const farmSelects = document.querySelectorAll('#farm_id_select, #batch_farm_id_select');
+        list.innerHTML = '';
+        farmSelects.forEach(s => s.innerHTML = '');
+
+        if (!farms || farms.length === 0) {
+            list.innerHTML = '<li>No farms found. Add one to get started.</li>';
+            return;
+        }
+        farms.forEach(farm => {
+            list.innerHTML += `<li>${farm.name} (ID: ${farm.id})</li>`;
+            farmSelects.forEach(s => {
+                s.innerHTML += `<option value="${farm.id}">${farm.name}</option>`;
+            });
+        });
+    }
+    
+    // --- Initial Data Fetch ---
+    async function loadDashboard() {
+        const farmsData = await apiFetch('/farmer/farms');
+        if(farmsData && farmsData.farms) {
+            renderFarms(farmsData.farms);
+        }
+
+        const animalsData = await apiFetch('/farmer/animals');
+        if (animalsData && animalsData.animals) {
+            allAnimals = animalsData.animals;
+            renderAnimals(allAnimals);
+        }
+        
+        const farmSelect = document.getElementById('farm_id_select');
+        if (farmSelect.value) {
+            const batchesData = await apiFetch(`/farmer/feed_batches?farm_id=${farmSelect.value}`);
+            if (batchesData && batchesData.feed_batches) renderFeedBatches(batchesData.feed_batches);
+        }
+    }
+
+    // --- Modal Handling (Original functionality preserved) ---
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        const closeBtn = modal.querySelector('.close-btn');
+        closeBtn.onclick = () => modal.style.display = 'none';
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+    });
+    
+    function openModal(modalId) { document.getElementById(modalId).style.display = 'block'; }
+    function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+    
+    // --- Event Listeners for Buttons (Original functionality preserved) ---
+    document.getElementById('addAnimalBtn').onclick = () => {
+        document.getElementById('animalForm').reset();
+        document.getElementById('animalModalTitle').innerText = 'Add New Animal';
+        openModal('animalModal');
+    };
+    document.getElementById('addFeedBatchBtn').onclick = () => {
+        document.getElementById('feedBatchForm').reset();
+        openModal('feedBatchModal');
+    };
+    document.getElementById('addFarmBtn').onclick = () => {
+        document.getElementById('farmForm').reset();
+        openModal('farmModal');
+    };
+
+    // --- Form Submissions (Original functionality preserved) ---
+    document.getElementById('animalForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+            tag_id: document.getElementById('tag_id').value,
+            farm_id: document.getElementById('farm_id_select').value,
+            species: document.getElementById('species').value,
+            breed: document.getElementById('breed').value,
+            dob: document.getElementById('dob').value,
+            gender: document.getElementById('gender').value
+        };
+        const result = await apiFetch('/farmer/animals', { method: 'POST', body: JSON.stringify(payload) });
+        if (result) {
+            alert('Animal added successfully!');
+            closeModal('animalModal');
+            loadDashboard();
+        }
+    };
+    
+    document.getElementById('feedBatchForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+            farm_id: document.getElementById('batch_farm_id_select').value,
+            antimicrobial: document.getElementById('antimicrobial').value,
+            batch_number: document.getElementById('batch_number').value,
+            start_date: document.getElementById('start_date').value,
+            end_date: document.getElementById('end_date').value,
+            withdrawal_days: parseInt(document.getElementById('withdrawal_days').value)
+        };
+        const result = await apiFetch('/farmer/feed_batches', { method: 'POST', body: JSON.stringify(payload) });
+        if (result) {
+            alert('Feed batch added!');
+            closeModal('feedBatchModal');
+            loadDashboard();
+        }
+    };
+
+    document.getElementById('farmForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+            name: document.getElementById('farm_name').value,
+            location: document.getElementById('farm_location').value,
+        };
+        const result = await apiFetch('/farmer/farms', { method: 'POST', body: JSON.stringify(payload) });
+        if (result) {
+            alert('Farm added successfully!');
+            closeModal('farmModal');
+            loadDashboard();
+        }
+    };
+
+    document.getElementById('healthLogForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+            tag_id: document.getElementById('healthLogAnimalId').value,
+            weight: parseFloat(document.getElementById('weight').value) || null,
+            temperature: parseFloat(document.getElementById('temperature').value) || null,
+            symptoms: document.getElementById('symptoms').value,
+            notes: document.getElementById('notes').value
+        };
+        const result = await apiFetch('/farmer/health_log', { method: 'POST', body: JSON.stringify(payload) });
+        if (result) {
+            alert('Health log added!');
+            closeModal('healthLogModal');
+            viewAnimalDetails(payload.tag_id); // Refresh details view
+        }
+    };
+    
+    document.getElementById('updateStatusForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const tag_id = document.getElementById('statusUpdateAnimalId').value;
+        const payload = { status: document.getElementById('new_status').value };
+        const result = await apiFetch(`/farmer/animals/${tag_id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+        if (result) {
+            alert('Animal status updated!');
+            closeModal('updateStatusModal');
+            closeModal('animalDetailsModal');
+            loadDashboard();
+        }
+    };
+    
+    // --- Animal Details View (Original functionality preserved) ---
+    window.viewAnimalDetails = async (tag_id) => {
+        const result = await apiFetch(`/farmer/animals/${tag_id}`);
+        if (!result || !result.data) { return; }
+        
+        const { animal, health_logs, prescriptions } = result.data;
+        document.getElementById('animalDetailsTitle').innerText = `Details for Animal: ${animal.tag_id}`;
+        
+        const contentDiv = document.getElementById('animal-details-content');
+        contentDiv.innerHTML = `
+            <h3>Animal Information</h3>
+            <div class="detail-group"><strong>Tag ID:</strong> ${animal.tag_id}</div>
+            <div class="detail-group"><strong>Species:</strong> ${animal.species}</div>
+            <div class="detail-group"><strong>Breed:</strong> ${animal.breed || 'N/A'}</div>
+            <div class="detail-group"><strong>Age:</strong> ${animal.calculated_age || calculateAge(animal.dob)}</div>
+            <div class="detail-group"><strong>Status:</strong> ${animal.status || 'Active'}</div>
+            <hr>
+            <h3>Prescriptions from Vet</h3>
+            ${prescriptions.length > 0 ? prescriptions.map(p => `
+                <div class="card" style="margin-bottom:10px;">
+                    <strong>Drug:</strong> ${p.drug} (${p.dose})<br>
+                    <strong>Date:</strong> ${p.start_date}<br>
+                    <strong>Duration:</strong> ${p.duration_days} days<br>
+                    <strong>Status:</strong> ${p.status}
+                </div>`).join('') : '<p>No prescriptions found.</p>'}
+            <hr>
+            <h3>Health Log History</h3>
+            ${health_logs.length > 0 ? health_logs.map(log => `
+                <div class="card" style="margin-bottom:10px;">
+                     <strong>Date:</strong> ${new Date(log.created_at).toLocaleString()}<br>
+                     <strong>Weight:</strong> ${log.weight || 'N/A'} kg<br>
+                     <strong>Temp:</strong> ${log.temperature || 'N/A'} °C<br>
+                     <strong>Symptoms:</strong> ${log.symptoms || 'None'}<br>
+                     <strong>Notes:</strong> ${log.notes || 'None'}
+                </div>`).join('') : '<p>No health logs found.</p>'}
+        `;
+
+        document.getElementById('addHealthLogBtn').onclick = () => {
+            document.getElementById('healthLogForm').reset();
+            document.getElementById('healthLogAnimalId').value = tag_id;
+            openModal('healthLogModal');
+        };
+        document.getElementById('updateStatusBtn').onclick = () => {
+            document.getElementById('updateStatusForm').reset();
+            document.getElementById('statusUpdateAnimalId').value = tag_id;
+            openModal('updateStatusModal');
+        };
+
+        openModal('animalDetailsModal');
+    };
+    
+    // --- Other Functionality (Original functionality preserved) ---
+    window.updateFeedBatchStatus = async (batch_id, status) => {
+        if (!confirm(`Are you sure you want to mark this batch as '${status}'?`)) return;
+        const result = await apiFetch(`/farmer/feed_batches/${batch_id}`, { method: 'PATCH', body: JSON.stringify({ status: status }) });
+        if (result) {
+            alert('Batch status updated!');
+            loadDashboard();
+        }
+    };
+
+    function calculateAge(dobString) {
+        if (!dobString) return 'N/A';
+        const dob = new Date(dobString);
+        const diff_ms = Date.now() - dob.getTime();
+        const age_dt = new Date(diff_ms);
+        const years = Math.abs(age_dt.getUTCFullYear() - 1970);
+        const months = age_dt.getUTCMonth();
+        if (years > 0) return `${years} year${years > 1 ? 's' : ''}, ${months} month${months > 1 ? 's' : ''}`;
+        if (months > 0) return `${months} month${months > 1 ? 's' : ''}`;
+        return `${Math.max(0, age_dt.getUTCDate() - 1)} days`;
+    }
+
+    document.getElementById('animalSearch').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filteredAnimals = allAnimals.filter(animal => 
+            animal.tag_id.toLowerCase().includes(searchTerm) || 
+            animal.species.toLowerCase().includes(searchTerm)
+        );
+        renderAnimals(filteredAnimals);
+    });
+    
+    // --- NEW: AI Chatbot Logic ---
+    const chatButton = document.getElementById('aiChatButton');
+    const chatWindow = document.getElementById('aiChatWindow');
+    const closeChatBtn = chatWindow.querySelector('.close-chat');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const chatSendBtn = document.getElementById('chatSendBtn');
+
+    chatButton.addEventListener('click', () => {
+        chatWindow.style.display = 'flex';
+    });
+    closeChatBtn.addEventListener('click', () => {
+        chatWindow.style.display = 'none';
+    });
+
+    const sendChatMessage = async () => {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        // Display user message
+        addMessageToChat(message, 'user');
+        chatInput.value = '';
+        addTypingIndicator();
+
+        try {
+            // Send to backend
+            const response = await apiFetch('/ai/chatbot', {
+                method: 'POST',
+                body: JSON.stringify({ message: message })
+            });
+
+            removeTypingIndicator();
+            if (response && response.reply) {
+                addMessageToChat(response.reply, 'ai');
+            } else {
+                addMessageToChat('Sorry, I could not get a response.', 'ai');
+            }
+        } catch (error) {
+            removeTypingIndicator();
+            addMessageToChat('An error occurred. Please try again.', 'ai');
+        }
+    };
+
+    chatSendBtn.addEventListener('click', sendChatMessage);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendChatMessage();
+        }
+    });
+
+    function addMessageToChat(text, sender) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('chat-message', `${sender}-message`);
+        messageElement.textContent = text;
+        chatMessages.appendChild(messageElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
+    }
+
+    function addTypingIndicator() {
+        const indicator = document.createElement('div');
+        indicator.classList.add('chat-message', 'ai-message', 'typing-indicator');
+        indicator.textContent = '...';
+        indicator.id = 'typingIndicator';
+        chatMessages.appendChild(indicator);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    // --- Initial Load ---
+    loadDashboard();
+});
+</script>
+</body>
+</html>

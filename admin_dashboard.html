@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - AgriMed Tracker</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --primary-color: #2c6b2f; --secondary-color: #f3f4f6; --accent-color: #e59b2f;
+            --text-color: #374151; --light-gray: #d1d5db; --error-color: #dc2626; --success-color: #16a34a;
+            --card-bg-color: #ffffff;
+        }
+        body {
+            font-family: 'Nunito', sans-serif; margin: 0; background-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+        .container {
+            max-width: 1200px; margin: 0 auto; padding: 2rem;
+        }
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: var(--card-bg-color); padding: 1rem 2rem; border-radius: 0.75rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); margin-bottom: 2rem;
+        }
+        header h1 {
+            margin: 0; font-size: 1.75rem; color: var(--primary-color);
+        }
+        .btn {
+            padding: 0.625rem 1.25rem; border: none; border-radius: 0.5rem; font-size: 0.9rem;
+            font-weight: 700; cursor: pointer; transition: background-color 0.3s, transform 0.1s;
+        }
+        .btn-danger { background-color: var(--error-color); color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .card {
+            background-color: var(--card-bg-color); padding: 2rem; border-radius: 0.75rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        .card-header {
+            padding-bottom: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--light-gray);
+        }
+        .card-header h2 {
+            margin: 0; font-size: 1.5rem; color: var(--text-color);
+        }
+        table {
+            width: 100%; border-collapse: collapse;
+        }
+        th, td {
+            text-align: left; padding: 1rem; border-bottom: 1px solid var(--light-gray);
+        }
+        th {
+            font-size: 0.875rem; font-weight: 600; color: #6b7280; text-transform: uppercase;
+        }
+        .action-buttons {
+            display: flex; gap: 0.75rem;
+        }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-success:hover { background-color: #15803d; }
+        .btn-secondary { background-color: #6b7280; color: white; }
+        .btn-secondary:hover { background-color: #4b5563; }
+        #loading-indicator {
+            text-align: center; padding: 2rem; font-size: 1.2rem; font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Admin Dashboard</h1>
+            <button id="logout-btn" class="btn btn-danger">Logout</button>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Veterinarian Approval Queue</h2>
+                </div>
+                <div id="approval-table-container">
+                    <p id="loading-indicator">Loading pending approvals...</p>
+                    <table id="approval-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-vets-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- IMPORTANT: REPLACE WITH YOUR SUPABASE CREDENTIALS ---
+        const SUPABASE_URL = 'https://rvjavlexqkprbqzmpkeq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2amF2bGV4cWtwcmJxem1wa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MTAzMTksImV4cCI6MjA3MzE4NjMxOX0.UNmexs3OyZ7uC1a-4OYEEdny-IgBu5tK86WoHxOXU4Q';
+        // --- END OF CONFIGURATION ---
+        
+        const API_URL = ''; // Your Flask backend URL if it's not on the same origin.
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- API UTILITY ---
+        async function apiFetch(endpoint, options = {}) {
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                alert('Authentication error. Redirecting to login.');
+                window.location.href = '/';
+                return null;
+            }
+
+            const headers = {
+                'Authorization': `Bearer ${accessToken}`,
+                ...options.headers,
+            };
+            if (options.body && !(options.body instanceof FormData)) {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            try {
+                const response = await fetch(API_URL + endpoint, { ...options, headers });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || `HTTP error! status: ${response.status}`);
+                }
+                return data;
+            } catch (error) {
+                console.error(`API Error on ${endpoint}:`, error);
+                alert(`An error occurred: ${error.message}`);
+                if (error.message.toLowerCase().includes('token')) {
+                    window.location.href = '/';
+                }
+                return null;
+            }
+        }
+        
+        // --- UI RENDERING ---
+        const tableBody = document.getElementById('pending-vets-table-body');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const approvalTable = document.getElementById('approval-table');
+
+        function renderPendingVets(vets) {
+            tableBody.innerHTML = ''; // Clear existing rows
+            
+            if (vets.length === 0) {
+                loadingIndicator.textContent = 'No pending approvals found.';
+                loadingIndicator.style.display = 'block';
+                approvalTable.style.display = 'none';
+                return;
+            }
+
+            vets.forEach(vet => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${vet.name}</td>
+                    <td>${vet.email}</td>
+                    <td><span style="font-weight: 600; color: var(--accent-color);">${vet.status.replace('_', ' ')}</span></td>
+                    <td class="action-buttons">
+                        <a href="${vet.id_proof_url}" target="_blank" class="btn btn-secondary">View Doc</a>
+                        <button class="btn btn-success" data-vet-id="${vet.user_id}">Approve</button>
+                        <button class="btn btn-danger" data-vet-id="${vet.user_id}">Reject</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            loadingIndicator.style.display = 'none';
+            approvalTable.style.display = 'table';
+        }
+
+        // --- DATA LOADING ---
+        async function loadPendingVets() {
+            loadingIndicator.style.display = 'block';
+            approvalTable.style.display = 'none';
+            
+            const data = await apiFetch('/official/vets/pending-approval');
+            if (data && data.success) {
+                renderPendingVets(data.pending_vets);
+            } else {
+                loadingIndicator.textContent = 'Failed to load data.';
+            }
+        }
+
+        // --- ACTIONS ---
+        async function approveVet(vetId) {
+            if (!confirm('Are you sure you want to approve this veterinarian?')) return;
+            
+            const data = await apiFetch(`/official/vets/${vetId}/approve`, { method: 'POST' });
+            if (data && data.success) {
+                alert('Veterinarian approved successfully.');
+                loadPendingVets(); // Refresh the list
+            }
+        }
+
+        async function rejectVet(vetId) {
+            if (!confirm('Are you sure you want to reject this veterinarian? This action cannot be undone.')) return;
+
+            const data = await apiFetch(`/official/vets/${vetId}/reject`, { method: 'POST' });
+            if (data && data.success) {
+                alert('Veterinarian rejected successfully.');
+                loadPendingVets(); // Refresh the list
+            }
+        }
+        
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            localStorage.removeItem('accessToken');
+            window.location.href = '/';
+        }
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPendingVets();
+
+            document.getElementById('logout-btn').addEventListener('click', logout);
+            
+            // Event delegation for approve/reject buttons
+            tableBody.addEventListener('click', (e) => {
+                const vetId = e.target.getAttribute('data-vet-id');
+                if (!vetId) return;
+
+                if (e.target.classList.contains('btn-success')) {
+                    approveVet(vetId);
+                } else if (e.target.classList.contains('btn-danger')) {
+                    rejectVet(vetId);
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>

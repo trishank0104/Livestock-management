@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriMed Tracker - Welcome</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --primary-color: #2c6b2f; --secondary-color: #f3f4f6; --accent-color: #e59b2f;
+            --text-color: #374151; --light-gray: #d1d5db; --error-color: #dc2626; --success-color: #16a34a;
+        }
+        body {
+            font-family: 'Nunito', sans-serif; margin: 0; display: flex; justify-content: center;
+            align-items: center; min-height: 100vh; background-color: var(--secondary-color);
+            background-image: url('https://images.unsplash.com/photo-1499529112087-3cb3b73cec95?auto=format&fit=crop&q=80&w=1974');
+            background-size: cover; background-position: center; color: var(--text-color);
+        }
+        .auth-container {
+            background-color: rgba(255, 255, 255, 0.97); backdrop-filter: blur(10px); padding: 2.5rem;
+            border-radius: 1rem; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); width: 100%;
+            max-width: 450px; box-sizing: border-box; margin: 1rem; overflow: hidden;
+        }
+        .auth-header { text-align: center; margin-bottom: 2rem; }
+        .auth-header h1 { font-size: 2.25rem; font-weight: 700; color: var(--primary-color); margin: 0; }
+        .auth-header p { margin-top: 0.5rem; color: #6b7280; }
+        .form-group { margin-bottom: 1.25rem; position: relative; }
+        .form-label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #4b5563; }
+        .form-input {
+            width: 100%; padding: 0.875rem; border: 1px solid var(--light-gray); border-radius: 0.5rem;
+            box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; font-family: 'Nunito', sans-serif;
+        }
+        .form-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(44, 107, 47, 0.2); }
+        .btn {
+            width: 100%; padding: 0.875rem; border: none; border-radius: 0.5rem; font-size: 1rem;
+            font-weight: 700; cursor: pointer; transition: background-color 0.3s, transform 0.1s;
+        }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: #255a27; }
+        .btn:active { transform: translateY(1px); }
+        .divider { display: flex; align-items: center; text-align: center; margin: 1.5rem 0; color: #6b7280; font-size: 0.875rem; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--light-gray); }
+        .divider:not(:empty)::before { margin-right: 1em; }
+        .divider:not(:empty)::after { margin-left: 1em; }
+        .btn-google {
+            display: flex; align-items: center; justify-content: center; background-color: #ffffff;
+            color: var(--text-color); border: 1px solid var(--light-gray); gap: 0.75rem;
+        }
+        .btn-google:hover { background-color: #f9fafb; }
+        .google-icon { width: 20px; height: 20px; }
+        .auth-switch-link { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; }
+        .auth-switch-link a { color: var(--primary-color); font-weight: 600; text-decoration: none; cursor: pointer; }
+        .auth-switch-link a:hover { text-decoration: underline; }
+        .tab-container { display: flex; border-bottom: 1px solid var(--light-gray); margin-bottom: 1.5rem; }
+        .tab { flex: 1; text-align: center; padding: 0.75rem; cursor: pointer; font-weight: 600; color: #6b7280; border-bottom: 2px solid transparent; }
+        .tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+        .file-input-label { display: block; padding: 0.875rem; border: 1px dashed var(--light-gray); border-radius: 0.5rem; text-align: center; cursor: pointer; color: #6b7280; }
+        .file-input-label:hover { border-color: var(--primary-color); }
+        .file-input-label span { font-weight: 600; color: var(--primary-color); }
+        .hidden-file-input { display: none; }
+        #file-name-display, #google-file-name-display { margin-top: 0.5rem; font-size: 0.875rem; color: #4b5563; text-align: center; }
+        .message-box { padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; text-align: center; font-weight: 600; display: none; }
+        .message-box.error { background-color: rgba(220, 38, 38, 0.1); color: var(--error-color); }
+        .message-box.success { background-color: rgba(22, 163, 74, 0.1); color: var(--success-color); }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <!-- Login View -->
+        <div id="login-view">
+            <div class="auth-header"> <h1>Welcome Back</h1> </div>
+            <div id="login-message" class="message-box"></div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email" class="form-label">Email Address</label>
+                    <input type="email" id="login-email" class="form-input" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="login-password" class="form-label">Password</label>
+                    <input type="password" id="login-password" class="form-input" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            <div class="divider">or</div>
+            <button id="google-login-btn" class="btn btn-google">
+                <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56,12.25C22.56,11.47 22.49,10.72 22.36,10H12V14.25H18.06C17.72,16.2 16.36,17.77 14.25,18.9V21.6H17.2C19.86,19.22 21.56,15.95 21.56,12.25Z" fill="#4285F4"/><path d="M12,24C15.24,24 17.97,22.92 19.96,21.1L16.2,18.9C15.12,19.66 13.68,20.14 12,20.14C9.12,20.14 6.6,18.28 5.62,15.7H2.64V18.4C4.38,21.78 7.92,24 12,24Z" fill="#34A853"/><path d="M5.62,15.7C5.36,14.96 5.24,14.15 5.24,13.3C5.24,12.45 5.36,11.64 5.62,10.9H2.64C1.96,12.18 1.6,13.56 1.6,15C1.6,16.44 1.96,17.82 2.64,19.1L5.62,16.4Z" fill="#FBBC05"/><path d="M12,5.86C13.86,5.86 15.3,6.62 16.2,7.46L19.04,4.62C17.1,2.86 14.76,1.86 12,1.86C7.92,1.86 4.38,4.22 2.64,7.6L5.62,10.3C6.6,7.72 9.12,5.86 12,5.86Z" fill="#EA4335"/></svg>
+                <span>Continue with Google</span>
+            </button>
+            <p class="auth-switch-link">Don't have an account? <a id="show-signup-view">Sign Up</a></p>
+        </div>
+
+        <!-- Email/Password Signup View -->
+        <div id="signup-view" style="display: none;">
+            <div class="auth-header"> <h1>Create Account</h1> </div>
+            <div id="signup-message" class="message-box"></div>
+            <div class="tab-container">
+                <div id="signup-farmer-tab" class="tab active">I am a Farmer</div>
+                <div id="signup-vet-tab" class="tab">I am a Veterinarian</div>
+            </div>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-name" class="form-label">Full Name</label>
+                    <input type="text" id="signup-name" class="form-input" required>
+                </div>
+                <div class="form-group" id="signup-farm-name-group">
+                    <label for="signup-farm-name" class="form-label">Farm Name</label>
+                    <input type="text" id="signup-farm-name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-email" class="form-label">Email Address</label>
+                    <input type="email" id="signup-email" class="form-input" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="signup-password" class="form-label">Password</label>
+                    <input type="password" id="signup-password" class="form-input" required autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label for="signup-confirm-password" class="form-label">Confirm Password</label>
+                    <input type="password" id="signup-confirm-password" class="form-input" required autocomplete="new-password">
+                </div>
+                <div class="form-group" id="signup-vet-proof-group" style="display: none;">
+                    <label class="form-label">ID Proof Document</label>
+                    <label class="file-input-label" for="signup-vet-proof-file">Click to upload <span>(PDF, PNG, JPG)</span></label>
+                    <input type="file" id="signup-vet-proof-file" class="hidden-file-input" accept=".pdf,.png,.jpg,.jpeg">
+                    <p id="file-name-display"></p>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </form>
+            <p class="auth-switch-link">Already have an account? <a id="show-login-view">Login</a></p>
+        </div>
+
+        <!-- Google Signup - Complete Profile View -->
+        <div id="complete-profile-view" style="display: none;">
+            <div class="auth-header">
+                <h1>Complete Your Profile</h1>
+                <p>Welcome! Just a few more details to get you started.</p>
+            </div>
+            <div id="complete-profile-message" class="message-box"></div>
+            <div class="tab-container">
+                <div id="google-farmer-tab" class="tab active">I am a Farmer</div>
+                <div id="google-vet-tab" class="tab">I am a Veterinarian</div>
+            </div>
+            <form id="complete-profile-form">
+                <div class="form-group">
+                    <label for="google-name" class="form-label">Full Name</label>
+                    <input type="text" id="google-name" class="form-input" required>
+                </div>
+                <div class="form-group" id="google-farm-name-group">
+                    <label for="google-farm-name" class="form-label">Farm Name</label>
+                    <input type="text" id="google-farm-name" class="form-input" required>
+                </div>
+                <div class="form-group" id="google-vet-proof-group" style="display: none;">
+                    <label class="form-label">ID Proof Document</label>
+                    <label class="file-input-label" for="google-vet-proof-file">Click to upload <span>(PDF, PNG, JPG)</span></label>
+                    <input type="file" id="google-vet-proof-file" class="hidden-file-input" accept=".pdf,.png,.jpg,.jpeg">
+                    <p id="google-file-name-display"></p>
+                </div>
+                <button type="submit" class="btn btn-primary">Complete Registration</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- IMPORTANT: REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS ---
+        const SUPABASE_URL = 'https://rvjavlexqkprbqzmpkeq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2amF2bGV4cWtwcmJxem1wa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MTAzMTksImV4cCI6MjA3MzE4NjMxOX0.UNmexs3OyZ7uC1a-4OYEEdny-IgBu5tK86WoHxOXU4Q';
+        // --- END OF CONFIGURATION ---
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- DOM ELEMENTS ---
+        const loginView = document.getElementById('login-view');
+        const signupView = document.getElementById('signup-view');
+        const completeProfileView = document.getElementById('complete-profile-view');
+        
+        // --- VIEW SWITCHING ---
+        function showView(viewToShow) {
+            [loginView, signupView, completeProfileView].forEach(view => {
+                view.style.display = view === viewToShow ? 'block' : 'none';
+            });
+        }
+        document.getElementById('show-signup-view').addEventListener('click', () => showView(signupView));
+        document.getElementById('show-login-view').addEventListener('click', () => showView(loginView));
+
+        // --- MESSAGE HELPERS ---
+        function showMessage(element, text, type = 'error') {
+            element.textContent = text;
+            element.className = `message-box ${type}`;
+            element.style.display = 'block';
+        }
+        function hideAllMessages() {
+            document.querySelectorAll('.message-box').forEach(box => box.style.display = 'none');
+        }
+
+        // --- EMAIL/PASSWORD SIGNUP LOGIC ---
+        const signupForm = document.getElementById('signup-form');
+        let signupRole = 'farmer';
+        document.getElementById('signup-farmer-tab').addEventListener('click', () => {
+            signupRole = 'farmer';
+            document.getElementById('signup-farmer-tab').classList.add('active');
+            document.getElementById('signup-vet-tab').classList.remove('active');
+            document.getElementById('signup-farm-name-group').style.display = 'block';
+            document.getElementById('signup-vet-proof-group').style.display = 'none';
+            document.getElementById('signup-farm-name').required = true;
+            document.getElementById('signup-vet-proof-file').required = false;
+        });
+        document.getElementById('signup-vet-tab').addEventListener('click', () => {
+            signupRole = 'vet';
+            document.getElementById('signup-vet-tab').classList.add('active');
+            document.getElementById('signup-farmer-tab').classList.remove('active');
+            document.getElementById('signup-farm-name-group').style.display = 'none';
+            document.getElementById('signup-vet-proof-group').style.display = 'block';
+            document.getElementById('signup-farm-name').required = false;
+            document.getElementById('signup-vet-proof-file').required = true;
+        });
+        document.getElementById('signup-vet-proof-file').addEventListener('change', (e) => {
+            document.getElementById('file-name-display').textContent = e.target.files[0]?.name || '';
+        });
+        
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAllMessages();
+            const messageEl = document.getElementById('signup-message');
+            const submitButton = signupForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Creating Account...';
+
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+
+            if (password !== confirmPassword) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create Account';
+                return showMessage(messageEl, 'Passwords do not match.');
+            }
+
+            try {
+                let response;
+                if (signupRole === 'farmer') {
+                    const farmName = document.getElementById('signup-farm-name').value;
+                    if (!farmName) {
+                        throw new Error('Farm name is required.');
+                    }
+                    response = await fetch('/auth/signup/farmer', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email, password, farm_name: farmName }),
+                    });
+                } else { // Vet
+                    const proofFile = document.getElementById('signup-vet-proof-file').files[0];
+                    if (!proofFile) {
+                        throw new Error('ID proof document is required.');
+                    }
+                    const formData = new FormData();
+                    formData.append('name', name);
+                    formData.append('email', email);
+                    formData.append('password', password);
+                    formData.append('id_proof_file', proofFile);
+                    
+                    response = await fetch('/auth/signup/vet', { method: 'POST', body: formData });
+                }
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+                
+                showMessage(messageEl, data.message, 'success');
+                signupForm.reset();
+                document.getElementById('file-name-display').textContent = '';
+                setTimeout(() => showView(loginView), 3000);
+
+            } catch (error) {
+                showMessage(messageEl, error.message);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create Account';
+            }
+        });
+
+        // --- GOOGLE SIGNUP & PROFILE COMPLETION LOGIC ---
+        const completeProfileForm = document.getElementById('complete-profile-form');
+        let googleSignupRole = 'farmer';
+        document.getElementById('google-farmer-tab').addEventListener('click', () => {
+            googleSignupRole = 'farmer';
+            document.getElementById('google-farmer-tab').classList.add('active');
+            document.getElementById('google-vet-tab').classList.remove('active');
+            document.getElementById('google-farm-name-group').style.display = 'block';
+            document.getElementById('google-vet-proof-group').style.display = 'none';
+            document.getElementById('google-farm-name').required = true;
+            document.getElementById('google-vet-proof-file').required = false;
+        });
+        document.getElementById('google-vet-tab').addEventListener('click', () => {
+            googleSignupRole = 'vet';
+            document.getElementById('google-vet-tab').classList.add('active');
+            document.getElementById('google-farmer-tab').classList.remove('active');
+            document.getElementById('google-farm-name-group').style.display = 'none';
+            document.getElementById('google-vet-proof-group').style.display = 'block';
+            document.getElementById('google-farm-name').required = false;
+            document.getElementById('google-vet-proof-file').required = true;
+        });
+        document.getElementById('google-vet-proof-file').addEventListener('change', (e) => {
+            document.getElementById('google-file-name-display').textContent = e.target.files[0]?.name || '';
+        });
+
+        completeProfileForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideAllMessages();
+
+    const messageEl = document.getElementById('complete-profile-message');
+    const submitButton = completeProfileForm.querySelector('button[type="submit"]');
+
+    submitButton.disabled = true;
+    submitButton.textContent = 'Saving...';
+
+    try {
+        // 1. **Safely get the session and user object.**
+        // This is the most reliable way to get the current session and user.
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+
+        // If there's an error or the session/user doesn't exist, stop execution.
+        if (sessionError || !session?.user) {
+            throw new Error('Authentication session expired or invalid. Please log in again.');
+        }
+        // **This line defines the 'user' object, fixing the previous error.**
+        const { user } = session;
+
+        // 2. **Build the form data for submission.**
+        const formData = new FormData();
+        const name = document.getElementById('google-name').value;
+        
+        // Append user details from the authenticated session.
+        formData.append('user_id', user.id);
+        formData.append('email', user.email);
+        formData.append('name', name);
+        formData.append('role', googleSignupRole);
+
+        // 3. **Append role-specific data.**
+        if (googleSignupRole === 'farmer') {
+            const farmName = document.getElementById('google-farm-name').value;
+            if (!farmName) throw new Error('Farm name is required.');
+            formData.append('farm_name', farmName);
+        } else { // This handles the 'vet' role.
+            const proofFile = document.getElementById('google-vet-proof-file').files[0];
+            if (!proofFile) throw new Error('ID proof document is required.');
+            formData.append('id_proof_file', proofFile);
+        }
+
+        // 4. **Send the data to the backend.**
+        const response = await fetch('/auth/complete-google-profile', {
+            method: 'POST',
+            body: formData, // The browser automatically sets the 'Content-Type' for FormData.
+        });
+
+        const resultData = await response.json();
+        if (!response.ok) {
+            // Use the error message from the server's JSON response.
+            throw new Error(resultData.message || 'An unknown server error occurred.');
+        }
+        
+        // 5. **Handle the successful submission.**
+        showMessage(messageEl, resultData.message + ' Redirecting to dashboard...', 'success');
+        setTimeout(() => {
+            window.location.href = `/${googleSignupRole}`;
+        }, 2000);
+
+    } catch (error) {
+        // If anything in the 'try' block fails, this will catch the error.
+        showMessage(messageEl, error.message);
+        // On failure, re-enable the button so the user can try again.
+        submitButton.disabled = false;
+        submitButton.textContent = 'Complete Registration';
+    }
+});
+
+        // --- LOGIN & REDIRECTION LOGIC ---
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAllMessages();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) showMessage(document.getElementById('login-message'), error.message);
+        });
+
+        document.getElementById('google-login-btn').addEventListener('click', async () => {
+            await supabaseClient.auth.signInWithOAuth({ provider: 'google' });
+        });
+
+        // REPLACE your existing onAuthStateChange function with this corrected version
+
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    // This function now correctly handles the login flow.
+    // It only acts when a user has successfully signed in.
+    if (event === 'SIGNED_IN' && session) {
+        try {
+            // 1. Verify the user's token with your backend.
+            const response = await fetch('/auth/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ access_token: session.access_token })
+            });
+            
+            const result = await response.json();
+            if (!response.ok) {
+                // If verification fails, throw an error to be caught below.
+                throw new Error(result.message || 'Failed to verify session with backend.');
+            }
+
+            // 2. Check if it's a new user (e.g., first Google sign-in).
+            if (result.data.is_new_user) {
+                // If so, show the "Complete Profile" form.
+                // Pre-fill the name from their Google account if available.
+                document.getElementById('google-name').value = result.data.auth_user.user_metadata?.full_name || '';
+                showView(completeProfileView);
+            } else {
+                // 3. For an existing user, get their role from your public users table.
+                const userRole = result.data.public_user.role;
+                
+                if (userRole) {
+                    // **THIS IS THE CORRECT PLACE FOR REDIRECTION**
+                    // If a role exists, the user is fully registered.
+                    
+                    // Save the token to localStorage so other pages (like the dashboard) can use it.
+                    localStorage.setItem('accessToken', session.access_token);
+                    
+                    // Redirect to the appropriate dashboard (e.g., /farmer or /vet).
+                    window.location.href = `/${userRole}`;
+                } else {
+                    // This is a safety catch-all. If a user exists but has no role,
+                    // there's a data issue. Log them out to prevent them from getting stuck.
+                    throw new Error('Your profile is not fully configured. Could not determine user role.');
+                }
+            }
+        } catch (error) {
+            // If any part of the process fails, show an error message on the login page
+            // and sign the user out to ensure a clean state.
+            showMessage(document.getElementById('login-message'), error.message);
+            await supabaseClient.auth.signOut();
+        }
+    }
+});
+        
+    </script>
+</body>
+</html>
+
